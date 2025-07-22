@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenLife.io (Particle Life)</title>
+  <style>
+    body {
+      margin: 0;
+      background: rgb(0, 0, 0);
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: rgb(0, 2, 32);
+    }
+    #legend {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgb(2, 0, 34);
+      padding: 10px;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 100;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: white;
+      font-family: 'Arial', sans-serif; /* Reverting to previous font */
+      font-weight: normal;
+    }
+    .legend-color-box {
+      width: 15px;
+      height: 15px;
+      border-radius: 2px;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+  <div id="legend">
+    <div class="legend-item">
+      <span class="legend-color-box" style="background-color: #00b0ff;"></span>
+      <span>Water (H₂O)</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-color-box" style="background-color: #ff9800;"></span>
+      <span>Proteins</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-color-box" style="background-color: #76ff03;"></span>
+      <span>Lipids</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-color-box" style="background-color: #f50057;"></span>
+      <span>Nucleic Acids</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-color-box" style="background-color: #6200ea;"></span>
+      <span>Carbohydrates</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-color-box" style="background-color: #009688;"></span>
+      <span>Minerals and Ions</span>
+    </div>
+  </div>
+  <canvas id="particles"></canvas>
+<script>
+const canvas = document.getElementById("particles");
+const ctx = canvas.getContext("2d");
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
+
+const n = 1000;
+const dt = 0.02;
+const rMax = 0.2;
+const m = 6;
+const forceFactor = 5;
+const frictionHalfLife = 0.040;
+const frictionFactor = Math.pow(0.5, dt / frictionHalfLife);
+
+const matrix = Array.from({ length: m }, () =>
+  Array.from({ length: m }, () => Math.random() * 2 - 1)
+);
+
+const colors = new Int32Array(n);
+const posX = new Float32Array(n);
+const posY = new Float32Array(n);
+const posZ = new Float32Array(n);
+const velX = new Float32Array(n);
+const velY = new Float32Array(n);
+const velZ = new Float32Array(n);
+
+for (let i = 0; i < n; i++) {
+  colors[i] = Math.floor(Math.random() * m);
+  posX[i] = Math.random();
+  posY[i] = Math.random();
+  posZ[i] = Math.random();
+  velX[i] = (Math.random() - 0.5) * 0.01;
+  velY[i] = (Math.random() - 0.5) * 0.01;
+  velZ[i] = (Math.random() - 0.5) * 0.01;
+}
+
+function force(r, a) {
+  const beta = 0.3;
+  if (r < beta) return r / beta - 1;
+  else if (r < 1) return a * (1 - Math.abs(2 * r - 1 - beta) / (1 - beta));
+  return 0;
+}
+
+function updateParticles() {
+  for (let i = 0; i < n; i++) {
+    let fx = 0, fy = 0, fz = 0;
+
+    for (let j = 0; j < n; j++) {
+      if (i === j) continue;
+
+      let dx = posX[j] - posX[i];
+      let dy = posY[j] - posY[i];
+      let dz = posZ[j] - posZ[i];
+
+      if (dx > 0.5) dx -= 1;
+      if (dx < -0.5) dx += 1;
+      if (dy > 0.5) dy -= 1;
+      if (dy < -0.5) dy += 1;
+      if (dz > 0.5) dz -= 1;
+      if (dz < -0.5) dz += 1;
+
+      const r = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      if (r > 0 && r < rMax) {
+        const f = force(r / rMax, matrix[colors[i]][colors[j]]);
+        fx += (dx / r) * f;
+        fy += (dy / r) * f;
+        fz += (dz / r) * f;
+      }
+    }
+
+    velX[i] = velX[i] * frictionFactor + fx * rMax * forceFactor * dt;
+    velY[i] = velY[i] * frictionFactor + fy * rMax * forceFactor * dt;
+    velZ[i] = velZ[i] * frictionFactor + fz * rMax * forceFactor * dt;
+  }
+
+  for (let i = 0; i < n; i++) {
+    posX[i] += velX[i] * dt;
+    posY[i] += velY[i] * dt;
+    posZ[i] += velZ[i] * dt;
+
+    if (posX[i] < 0) posX[i] += 1;
+    if (posX[i] >= 1) posX[i] -= 1;
+    if (posY[i] < 0) posY[i] += 1;
+    if (posY[i] >= 1) posY[i] -= 1;
+    if (posZ[i] < 0) posZ[i] += 1;
+    if (posZ[i] >= 1) posZ[i] -= 1;
+  }
+}
+
+function render() {
+  updateParticles();
+  ctx.fillStyle = "black";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+
+  const focalLength = 3.4;
+
+  for (let i = 0; i < n; i++) {
+    const x = (posX[i] - 0.5);
+    const y = (posY[i] - 0.5);
+    const z = (posZ[i] - 0.5) + 1;
+
+    const scale = focalLength / (z + 0.3);
+    const screenX = cx + x * scale * 200;
+    const screenY = cy + y * scale * 200;
+    const radius = Math.max(0.5, scale * 0.3); // 👈 scale down
+
+    ctx.beginPath();
+    ctx.arc(screenX, screenY, radius, 0, 2 * Math.PI);
+    ctx.fillStyle = `hsl(${(colors[i] / m) * 360}, 100%, 60%)`;
+    ctx.fill();
+  }
+
+  requestAnimationFrame(render);
+}
+requestAnimationFrame(render);
+</script>
+
+
+</body>
+</html>
