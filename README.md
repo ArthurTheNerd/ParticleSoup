@@ -10,9 +10,9 @@ These settings are forces interacting with them and others, atracting of repulsi
 
 For example:
 
-**Red**: Attracts *blue* IF inside of radius R, until IS in radiusSmall
+`Red: Attracts blue IF inside of radius R, until IS in radiusSmall`
 
-**Blue**: Repulses *red* IF inside of radius R, until IS in radiusSmall
+`Blue: Repulses red IF inside of radius R, until IS in radiusSmall`
 
 The result would be the blue particle trying to escape from the red, while it is chasing the blue.
 
