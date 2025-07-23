@@ -82,11 +82,13 @@ function resizeCanvas() {
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 
+let lastReplacementTime = 0;
+const replacementInterval = 50; // in milliseconds
 const n = 1000;
 const dt = 0.02;
-const rMax = 0.2;
+const rMax = 0.10;
 const m = 6;
-const forceFactor = 5;
+const forceFactor = 22;
 const frictionHalfLife = 0.040;
 const frictionFactor = Math.pow(0.5, dt / frictionHalfLife);
 
@@ -149,6 +151,7 @@ function updateParticles() {
     velX[i] = velX[i] * frictionFactor + fx * rMax * forceFactor * dt;
     velY[i] = velY[i] * frictionFactor + fy * rMax * forceFactor * dt;
     velZ[i] = velZ[i] * frictionFactor + fz * rMax * forceFactor * dt;
+
   }
 
   for (let i = 0; i < n; i++) {
@@ -190,6 +193,23 @@ function render() {
     ctx.fillStyle = `hsl(${(colors[i] / m) * 360}, 100%, 60%)`;
     ctx.fill();
   }
+
+const now = performance.now();
+
+if (now - lastReplacementTime >= replacementInterval) {
+  lastReplacementTime = now;
+
+  const i = Math.floor(Math.random() * n); // pick particle to replace
+
+  // Respawn this particle
+  posX[i] = Math.random();
+  posY[i] = Math.random();
+  posZ[i] = Math.random();
+  velX[i] = (Math.random() - 0.5) * 0.01;
+  velY[i] = (Math.random() - 0.5) * 0.01;
+  velZ[i] = (Math.random() - 0.5) * 0.01;
+  colors[i] = Math.floor(Math.random() * m);
+}
 
   requestAnimationFrame(render);
 }
